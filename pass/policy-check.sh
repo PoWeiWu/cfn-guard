@@ -19,13 +19,13 @@ echo "Policy Check"
 cfn-guard validate -r $rule_name -o yaml -d $check_data || check_state=$?
 
 
-# if [ "$check_state" = '5' ]
-# then
-#     echo "fail"
-#     exit 0
-# else
-#     echo "pass"
-#     terraform apply -auto-approve
-# fi
+if [ "$check_state" = '5' ]
+then
+    echo "fail"
+    exit 0
+else
+    echo "pass"
+    terraform apply -auto-approve
+fi
 
 
