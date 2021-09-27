@@ -1,0 +1,62 @@
+# query instance values
+let instance = planned_values.root_module.child_modules.*.resources[
+    type == 'aws_instance'
+]
+
+# query subnetwork values
+let subnetwork = planned_values.root_module.child_modules.*.resources[
+    type == 'aws_subnet'
+] 
+
+# query security group values
+let sg_rule = planned_values.root_module.child_modules.*.resources[
+    type == 'aws_security_group_rule'
+]
+
+# validate instance_type
+rule instance_type_limit when %instance !empty
+{
+    %instance.values.instance_type in ['t2.micro', 't2.medium']
+    <<--****  machine_type must be t2.micro ****-->>
+}
+
+# check tags not empty
+rule check_instance_tags_not_empty when %instance !empty
+{
+    %instance.values.tags !empty
+    <<--**** resource must be attach tags. ****-->>
+}
+
+# validate instance naming rule
+rule instance_naming_rule_check when check_instance_tags_not_empty
+{
+    %instance.values.tags['Name'] == /^dev-/
+}
+
+# validate image source
+rule image_source when %instance !empty
+{
+    %instance.values.ami == 'ami-087c17d1fe0178315'
+    <<--**** Image only can use ami-087c17d1fe0178315. ****-->>
+}
+
+# validate if resource has created at limit region
+rule subnetwork_zone_limit when %subnetwork !empty
+{
+    %subnetwork.values.availability_zone in ['us-east-1a', 'us-east-1b', 'us-east-1c']
+    <<--**** region must be us-east-1. ****-->>
+}
+
+# validate sg_rule port souce range is legal
+rule sg_rule_source_range_limit when %sg_rule !empty
+{
+    let sg_rule_port = %sg_rule.values[
+        from_port != 80
+        from_port != 443
+    ]
+    
+    %sg_rule_port.cidr_blocks != '0.0.0.0/0'
+    <<--**** source range cant't use 0.0.0.0/0. ****-->>
+}
+
+
